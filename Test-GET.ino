@@ -22,19 +22,20 @@ void setup() {
 }
 
 void loop() {
-  float temp_value = dht.readTemperature(); // 온도 측정 
-  float humi_value = dht.readHumidity();    // 습도 측정 
-  String app_code = "Ipptest"; 
+  String app_code = "IppTest"; 
   String car_value = "20";         // 주차장 포화도 임의 설정
   String barrier_value = "Y";     // 차수벽 on/off 상태 임의 설정
+  float temp_value = dht.readTemperature(); // 온도 측정 
+  float humi_value = dht.readHumidity();    // 습도 측정 
+
   // 센서값 측정
 
   DynamicJsonDocument json(256);
   json["app_code"] = app_code;
   json["car_value"] = car_value.toFloat();
   json["barrier_value"] = barrier_value;
-  json["temperature"] = String(temp_value, 1);
-  json["humidity"] = String(humi_value, 1);
+  json["temp_value"] = String(temp_value, 1);
+  json["humi_value"] = String(humi_value, 1);
   // 센서값을 json 변수에 저장 
 
 String jsonString;
@@ -71,9 +72,13 @@ void connectWiFi() {
   Serial.println("IP address: " + WiFi.localIP().toString());
 }
 
-void sendHttpRequest(String app_code,
-String car_value,String barrier_value,
-float temp_value, float humi_value) {
+void sendHttpRequest(
+  String app_code, 
+  String car_value, 
+  String barrier_value, 
+  float temp_value, 
+  float humi_value) 
+  {
   WiFiClient client;
   HTTPClient http;
   
@@ -82,8 +87,8 @@ float temp_value, float humi_value) {
   url += "app_code=" + app_code;
   url += "&car_value=" + car_value;
   url += "&barrier_value=" + barrier_value;
-  url += "&temperature=" + String(temp_value, 1);
-  url += "&humidity=" + String(humi_value, 1);
+  url += "&temp_value=" + String(temp_value, 1);
+  url += "&humi_value=" + String(humi_value, 1);
   
   http.begin(client, url);
   

@@ -4,12 +4,10 @@
 #include <ESP8266HTTPClient.h> 
 #include <ArduinoJson.h>   
 
-// WiFi 정보 설정
-const char* ssid = "KT_GiGA_2G_Wave2_5B1D";  // WiFi SSID
-const char* password = "4gxf7ke740";        // WiFi 비밀번호
+const char* ssid = "박정민 핫스팟";  // WiFi SSID
+const char* password = "qwer1234";  // WiFi 비밀번호
 
-// DHT11 센서 연결
-#define DHTPIN 2         // DHT11 데이터 핀
+#define DHTPIN 2         // DHT11 데이터 핀 2
 #define DHTTYPE DHT11    // DHT11 센서 사용
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -24,17 +22,25 @@ void setup() {
 }
 
 void loop() {
-  float temp_value = dht.readTemperature();
-  float humi_value = dht.readHumidity();
-  // 온습도 측정
+  float temp_value = dht.readTemperature(); // 온도 측정 
+  float humi_value = dht.readHumidity();    // 습도 측정 
+  String app_code = "Ipptest"; 
+  String car_value = "20";         // 주차장 포화도 임의 설정
+  String barrier_value = "Y";     // 차수벽 on/off 상태 임의 설정
+  // 센서값 측정
 
-  DynamicJsonDocument json(128);
-  json["temperature"] = temp_value;
-  json["humidity"] = humi_value;
-  // JSON 객체 생성
+  DynamicJsonDocument json(256);
+  json["app_code"] = app_code;
+  json["car_value"] = car_value.toFloat();
+  json["barrier_value"] = barrier_value;
+  json["temperature"] = String(temp_value, 1);
+  json["humidity"] = String(humi_value, 1);
+  // 센서값을 json 변수에 저장 
 
-  serializeJsonPretty(json, Serial);
-  //JSON값 시리얼모니터에 출력 
+String jsonString;
+serializeJson(json, jsonString); // json을 문자열로 변환하여 jsonString에 저장 
+Serial.println(jsonString); // JSON 문자열을 시리얼 모니터에 출력
+
   Serial.println(" ");
   Serial.print("습도: ");
   Serial.print(humi_value);
@@ -42,21 +48,17 @@ void loop() {
   Serial.print("온도: ");
   Serial.print(temp_value);
   Serial.println(" *C");
-  //원본 출력 
+  // 원본 센서값 출력 
 
-  String jsonString;
-  serializeJson(json, jsonString);
-  // JSON 문자열로 변환
-
-  sendHttpRequest(jsonString);
+  sendHttpRequest(app_code, car_value, barrier_value, temp_value, humi_value);
    // HTTP 요청 보내기
    
   delay(5000);
 }
 
 void connectWiFi() {
-  Serial.print("Connecting to WiFi...");
-  WiFi.begin(ssid, password);
+  Serial.print("와이파이 연결중... ");
+  WiFi.begin(ssid, password);    
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -65,20 +67,28 @@ void connectWiFi() {
   // 와이파이 연결 
 
   Serial.println("");
-  Serial.println("WiFi connected");
+  Serial.println("와이파이 연결 완료");
   Serial.println("IP address: " + WiFi.localIP().toString());
 }
 
-void sendHttpRequest(String payload) {
+void sendHttpRequest(String app_code,
+String car_value,String barrier_value,
+float temp_value, float humi_value) {
   WiFiClient client;
-
   HTTPClient http;
-  http.begin(client, String(serverAddress) + "?data=" + payload);
+  
   // HTTP 요청 설정
-
-  int httpResponseCode = http.GET();
-   // GET 방식 요청 보내기
-
+  String url = String(serverAddress) + "?";
+  url += "app_code=" + app_code;
+  url += "&car_value=" + car_value;
+  url += "&barrier_value=" + barrier_value;
+  url += "&temperature=" + String(temp_value, 1);
+  url += "&humidity=" + String(humi_value, 1);
+  
+  http.begin(client, url);
+  
+  int httpResponseCode = http.GET(); // GET 방식 요청 보내기
+  
   if (httpResponseCode > 0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
